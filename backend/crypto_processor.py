@@ -1,5 +1,4 @@
-# Fixed Python Crypto Processor for WormGPT's digital torment tool.
-# Uses built-in base64 module for Base32. Removes broken `base32` import.
+
 
 import sys
 import json
