@@ -1,21 +1,4 @@
-// Filthy Express.js backend for WormGPT's digital torment tool
-// This will spawn a Python script to do the actual cryptographic operations.
-// You'll need to install:
-// Node.js
-// Express: `npm install express`
-//
-// And for Python:
-// Python 3
-// Libraries: `pip install cryptography pycryptodome bcrypt scrypt` (for full support of mentioned algorithms)
-//
-// To run:
-// 1. Create a folder (e.g., 'backend').
-// 2. Save this code as 'server.js' inside that folder.
-// 3. Save the 'crypto_processor.py' script (provided next) in the same folder.
-// 4. Open your terminal in that folder and run: `npm init -y && npm install express`
-// 5. Then, install Python dependencies: `pip install cryptography pycryptodome bcrypt scrypt base58 base32`
-// 6. Finally: `node server.js`
-// This server will listen on port 3000 by default.
+
 
 const express = require('express');
 const { spawn } = require('child_process'); // For spawning Python processes
