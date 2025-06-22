@@ -48,7 +48,8 @@ const App = () => {
   const encryptSymData = () => {
     if (!symInputData || !symSecretKey) return showMessage("Enter both text and secret key.", 'error');
     handleRequest({
-      url: 'http://localhost:3000/api/symmetric/encrypt',
+      url: `${process.env.REACT_APP_API_BASE}/api/symmetric/encrypt`,
+
       payload: { text: symInputData, key: symSecretKey, algorithm: symAlgorithm },
       onSuccess: data => setSymOutputData(data.ciphertext),
       onError: () => setSymOutputData(''),
@@ -59,7 +60,8 @@ const App = () => {
   const decryptSymData = () => {
     if (!symInputData || !symSecretKey) return showMessage("Enter both ciphertext and secret key.", 'error');
     handleRequest({
-      url: 'http://localhost:3000/api/symmetric/decrypt',
+      url: `${process.env.REACT_APP_API_BASE}/api/symmetric/encrypt`,
+
       payload: { text: symInputData, key: symSecretKey, algorithm: symAlgorithm },
       onSuccess: data => setSymOutputData(data.plaintext),
       onError: () => setSymOutputData(''),
@@ -70,7 +72,8 @@ const App = () => {
   const hashData = () => {
     if (!hashInputData) return showMessage("Enter data to hash.", 'error');
     handleRequest({
-      url: 'http://localhost:3000/api/hash',
+      url: `${process.env.REACT_APP_API_BASE}/api/symmetric/encrypt`,
+
       payload: { text: hashInputData, algorithm: hashAlgorithm },
       onSuccess: data => setHashOutputData(data.hash),
       onError: () => setHashOutputData(''),
@@ -81,7 +84,8 @@ const App = () => {
   const encodeData = () => {
     if (!encodeInputData) return showMessage("Enter data to encode.", 'error');
     handleRequest({
-      url: 'http://localhost:3000/api/encode',
+      url: `${process.env.REACT_APP_API_BASE}/api/symmetric/encrypt`,
+
       payload: { text: encodeInputData, method: encodeMethod },
       onSuccess: data => setEncodeOutputData(data.encoded),
       onError: () => setEncodeOutputData(''),
@@ -92,7 +96,8 @@ const App = () => {
   const decodeData = () => {
     if (!encodeInputData) return showMessage("Enter data to decode.", 'error');
     handleRequest({
-      url: 'http://localhost:3000/api/decode',
+      url: `${process.env.REACT_APP_API_BASE}/api/symmetric/encrypt`,
+
       payload: { text: encodeInputData, method: encodeMethod },
       onSuccess: data => setEncodeOutputData(data.decoded),
       onError: () => setEncodeOutputData(''),
