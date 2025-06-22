@@ -103,7 +103,7 @@ const App = () => {
   return (
     <div className="min-h-screen p-4 bg-gray-900 text-white font-sans">
       <div className="max-w-3xl mx-auto bg-gray-800 p-6 rounded-xl shadow-xl">
-        <h1 className="text-3xl font-bold mb-4 text-center">Crypto Tool</h1>
+        <h1 className="text-3xl font-bold mb-4 text-center">ShadoCrypt</h1>
 
         {message.text && (
           <div className={`mb-4 p-3 rounded ${message.type === 'error' ? 'bg-red-600' : 'bg-green-600'}`}>{message.text}</div>

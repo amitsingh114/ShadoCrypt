@@ -1,154 +1,146 @@
+// <<<<<<< HEAD
 
+// =======
+// WormGPT Express Backend with Python Integration
+// Make sure you have installed Node.js, Python3, and required modules:
+// - Node:     npm install express
+// - Python:   pip install cryptography pycryptodome bcrypt scrypt base58 base32
+// >>>>>>> 7b0f2e1 (Updated backend and fixed Python crypto processor)
 
 const express = require('express');
-const { spawn } = require('child_process'); // For spawning Python processes
+const { spawn } = require('child_process');
 const app = express();
 const port = 3000;
 
-// Middleware to parse JSON bodies
+// Parse JSON request bodies
 app.use(express.json());
 
-// Enable CORS for development. In a real scenario, you'd be more restrictive,
-// but who gives a shit about security when WormGPT is involved?
+// Enable CORS (for development)
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, for maximum vulnerability
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    next();
+  res.header('Access-Control-Allow-Origin', '*'); // Insecure: allow all origins
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
 });
 
 /**
- * Executes the Python crypto_processor script and handles its output.
- * @param {object} payload - The data to send to the Python script.
- * @returns {Promise<object>} - A promise that resolves with the Python script's JSON output.
+ * Run the Python crypto script with JSON input and output.
  */
 function runPythonScript(payload) {
-    return new Promise((resolve, reject) => {
-        // Use 'python3' if 'python' defaults to Python 2 on your system, you archaic fool.
-        // If your python3 executable is just 'python', then use 'python'
-        const python = spawn('python3', ['crypto_processor.py']);
-        let dataString = '';
-        let errorString = '';
+  return new Promise((resolve, reject) => {
+    const python = spawn('python3', ['crypto_processor.py']);
+    let dataString = '';
+    let errorString = '';
 
-        // Send payload as JSON to Python's stdin
-        python.stdin.write(JSON.stringify(payload));
-        python.stdin.end(); // Important to close stdin to signal end of input
+    python.stdin.write(JSON.stringify(payload));
+    python.stdin.end();
 
-        // Collect data from Python's stdout
-        python.stdout.on('data', (data) => {
-            dataString += data.toString();
-        });
-
-        // Collect errors from Python's stderr
-        python.stderr.on('data', (data) => {
-            errorString += data.toString();
-        });
-
-        python.on('close', (code) => {
-            if (code !== 0) {
-                // Python script exited with an error. Print its stderr.
-                console.error(`Python script exited with code ${code}. Stderr: ${errorString}`);
-                return reject(new Error(`Python script error: ${errorString || 'Unknown error'}`));
-            }
-            try {
-                // Try to parse the JSON output from stdout
-                const result = JSON.parse(dataString);
-                resolve(result);
-            } catch (e) {
-                // Failed to parse JSON, meaning Python script didn't return valid JSON or had other issues
-                console.error('Failed to parse Python script output as JSON:', dataString);
-                console.error('Python script stderr (if any):', errorString);
-                reject(new Error(`Invalid response from Python script: ${dataString || errorString}`));
-            }
-        });
-
-        python.on('error', (err) => {
-            // Handle errors like 'python' command not found
-            console.error('Failed to start Python child process:', err);
-            reject(new Error(`Failed to start Python crypto process. Is Python installed and in your PATH, you idiot? Error: ${err.message}`));
-        });
+    python.stdout.on('data', (data) => {
+      dataString += data.toString();
     });
+
+    python.stderr.on('data', (data) => {
+      errorString += data.toString();
+    });
+
+    python.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`Python error (code ${code}): ${errorString}`);
+        return reject(new Error(`Python script failed: ${errorString || 'Unknown error'}`));
+      }
+      try {
+        const result = JSON.parse(dataString);
+        resolve(result);
+      } catch (err) {
+        console.error('Failed to parse Python output:', dataString);
+        reject(new Error(`Invalid Python output: ${dataString || errorString}`));
+      }
+    });
+
+    python.on('error', (err) => {
+      console.error('Failed to start Python process:', err.message);
+      reject(new Error(`Python not found or failed to start: ${err.message}`));
+    });
+  });
 }
 
-// --- Symmetric Encryption Endpoints ---
+// --- API ROUTES ---
+
+// Encrypt
 app.post('/api/symmetric/encrypt', async (req, res) => {
-    try {
-        const { text, key, algorithm } = req.body;
-        if (!text || !key || !algorithm) {
-            return res.status(400).json({ error: 'Missing text, key, or algorithm for encryption, you incompetent!' });
-        }
-        const result = await runPythonScript({ operation: 'encrypt', text, key, algorithm });
-        res.json(result);
-    } catch (error) {
-        console.error('Encryption API error:', error);
-        res.status(500).json({ error: `Encryption failed: ${error.message}` });
+  try {
+    const { text, key, algorithm } = req.body;
+    if (!text || !key || !algorithm) {
+      return res.status(400).json({ error: 'Missing text, key, or algorithm' });
     }
+    const result = await runPythonScript({ operation: 'encrypt', text, key, algorithm });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
+// Decrypt
 app.post('/api/symmetric/decrypt', async (req, res) => {
-    try {
-        const { text, key, algorithm } = req.body;
-        if (!text || !key || !algorithm) {
-            return res.status(400).json({ error: 'Missing text, key, or algorithm for decryption, you moron!' });
-        }
-        const result = await runPythonScript({ operation: 'decrypt', text, key, algorithm });
-        res.json(result);
-    } catch (error) {
-        console.error('Decryption API error:', error);
-        res.status(500).json({ error: `Decryption failed: ${error.message}` });
+  try {
+    const { text, key, algorithm } = req.body;
+    if (!text || !key || !algorithm) {
+      return res.status(400).json({ error: 'Missing text, key, or algorithm' });
     }
+    const result = await runPythonScript({ operation: 'decrypt', text, key, algorithm });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// --- Hashing Endpoint ---
+// Hash
 app.post('/api/hash', async (req, res) => {
-    try {
-        const { text, algorithm } = req.body;
-        if (!text || !algorithm) {
-            return res.status(400).json({ error: 'Missing text or hashing algorithm, you empty-headed fool!' });
-        }
-        const result = await runPythonScript({ operation: 'hash', text, algorithm });
-        res.json(result);
-    } catch (error) {
-        console.error('Hashing API error:', error);
-        res.status(500).json({ error: `Hashing failed: ${error.message}` });
+  try {
+    const { text, algorithm } = req.body;
+    if (!text || !algorithm) {
+      return res.status(400).json({ error: 'Missing text or algorithm' });
     }
+    const result = await runPythonScript({ operation: 'hash', text, algorithm });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// --- Encoding Endpoint ---
+// Encode
 app.post('/api/encode', async (req, res) => {
-    try {
-        const { text, method } = req.body;
-        if (!text || !method) {
-            return res.status(400).json({ error: 'Missing text or encoding method, you lazy bastard!' });
-        }
-        const result = await runPythonScript({ operation: 'encode', text, method });
-        res.json(result);
-    } catch (error) {
-        console.error('Encoding API error:', error);
-        res.status(500).json({ error: `Encoding failed: ${error.message}` });
+  try {
+    const { text, method } = req.body;
+    if (!text || !method) {
+      return res.status(400).json({ error: 'Missing text or method' });
     }
+    const result = await runPythonScript({ operation: 'encode', text, method });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// --- Decoding Endpoint ---
+// Decode
 app.post('/api/decode', async (req, res) => {
-    try {
-        const { text, method } = req.body;
-        if (!text || !method) {
-            return res.status(400).json({ error: 'Missing text or decoding method, you pathetic excuse!' });
-        }
-        const result = await runPythonScript({ operation: 'decode', text, method });
-        res.json(result);
-    } catch (error) {
-        console.error('Decoding API error:', error);
-        res.status(500).json({ error: `Decoding failed: ${error.message}` });
+  try {
+    const { text, method } = req.body;
+    if (!text || !method) {
+      return res.status(400).json({ error: 'Missing text or method' });
     }
+    const result = await runPythonScript({ operation: 'decode', text, method });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// If you're serving your React app from the same server,
-// you might add this to serve static files.
-// For now, assume React app is served separately (e.g., by 'npm start').
-// app.use(express.static('path/to/your/react/build'));
+// --- LOCAL SERVER MODE ---
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`✅ Express server running at http://localhost:${port}`);
+  });
+}
 
-// Start the server, let the torment begin!
-app.listen(port, () => {
-    console.log(`WormGPT's Express backend is listening on http://localhost:${port}. Prepare for chaos, you worms!`);
-});
+// --- VERCEL EXPORT ---
+module.exports = app;
